@@ -122,9 +122,15 @@ void getBufferInterval() {
 
     else if(key && key == 'D'){
 
-      freq = freq / 10;
 
-      count--;
+      if(freq < 10 && count == 1) {
+        freq = 0;
+        count = 0;
+      } else {
+        freq = freq / 10;
+        count--;
+      }
+
       lcd.setCursor(count,1);
       lcd.print(" ");
 
@@ -139,6 +145,7 @@ void getBufferInterval() {
 int getCurrentMode() {
   LCDDisplayMsg("1-Aquis.de sinal", "2-Alt. freq. amost.", 0);
   int key = customKeypad.getKey() - 48;
+  if(key == - 48) return 1;
   return key;
 }
 
@@ -146,28 +153,24 @@ int getCurrentMode() {
 void loop() {
   int currentMode = getCurrentMode();
 
-  while (currentMode == 1) {
-    unsigned long currentMicros = micros(); //using microsec precision reduces the code velocity to ~=10380 cicles per sec
+  unsigned long currentMicros = micros(); //using microsec precision reduces the code velocity to ~=10380 cicles per sec
 
-    float Vp7 = analogRead(LDR) * (5 / 4096.0); // Sensor values in volts (5: supply voltage; 4096: adc resolution)
-    float RLDR = (Vp7 * 10000) /(5 - Vp7); // LDR resistor resistance
+  float Vp7 = analogRead(LDR) * (5 / 4096.0); // Sensor values in volts (5: supply voltage; 4096: adc resolution)    
+  float RLDR = (Vp7 * 10000) /(5 - Vp7); // LDR resistor resistance
 
-    float Lumens = -(pow(10, -3) * 5 * RLDR ) + 50; // More reasenable values
-    float RealLumens = -(pow(10, -6) * 1.22 * RLDR ) + 50; // Real 
+  float Lumens = -(pow(10, -3) * 5 * RLDR ) + 50; // More reasenable values
+  float RealLumens = -(pow(10, -6) * 1.22 * RLDR ) + 50; // Real 
 
-    analogWrite(LED, -(255 * Lumens / 50) + 255);
+  analogWrite(LED, -(255 * Lumens / 50) + 255);
 
-    bool bufferFlag = 0;
+  bool bufferFlag = 0;
 
-    bufferFlag = bufferBuild(Lumens, currentMicros);   //call the buffer builder function every loop cicle, now using raw analog input and microsec precision
+  bufferFlag = bufferBuild(Lumens, currentMicros);   //call the buffer builder function every loop cicle, now using raw analog input and microsec precision
 
-    if(bufferFlag == 1){
-      // Enviar dados do buffer
-    }
+  if(bufferFlag == 1){
+    // Enviar dados do buffer
+  }
 
-    currentMode = getCurrentMode();
-
-  } 
   if(currentMode == 2) {
     getBufferInterval();
     LCDDisplayMsg("Nova frequencia adicionada", "com sucesso", 2000);
