@@ -38,14 +38,13 @@ const int LDR = PD_4;
 
 
 /*------------Global declaration for Buffer--------------*/
-int bufferSize = 64;
-int buffer[64]; //create buffer
-int bufferIndex = 0; //index for counting buffer readyness
+float buffer; //create buffer
+
 
 
 /*------------Global declaration for setting transfer speed--------------*/
 unsigned long BUFFERpreviousMicros = 0;       
-long BUFFERinterval = 1000;       //sets time interval (in microsec) between each data read
+long BUFFERinterval = 100000;       //sets time interval (in microsec) between each data read
 
 
 void LCDDisplayMsg(char *firstLine = "", char *secondLine = "",
@@ -85,20 +84,15 @@ bool bufferBuild(float valueRead, unsigned long currentMicros){
   if(currentMicros - BUFFERpreviousMicros >= BUFFERinterval){
     BUFFERpreviousMicros = currentMicros;  
 
-    buffer[bufferIndex] = valueRead;
-    bufferIndex++;
-
-    if (bufferIndex >= bufferSize){
-      bufferIndex = 0;
-      return 1;
-    }
+    buffer = valueRead;
+    return 1;
   }
   return 0;
 }
 
 
 void getBufferInterval() {
-  LCDDisplayMsg("Nova a freq. de am.", "", 100);
+  LCDDisplayMsg("New Sample rate", "", 100);
 
   char key;       // key pressed by user
   int freq = 0, count = 0; //inputed password and counter
@@ -109,7 +103,7 @@ void getBufferInterval() {
 
     if (key && key != 'A' && key != 'B' && key != 'C' && key != 'D' && key != '#' && key != '*' ){
 
-      Serial.println(key); //*debug*
+      //Serial.println(key); //*debug*
       freq = (freq * 10) + (key - 48);
 
 
@@ -138,12 +132,12 @@ void getBufferInterval() {
     }
   }
 
-  BUFFERinterval = freq * 1000;
+  BUFFERinterval = 1000000 / (freq);
 }
 
 
 int getCurrentMode() {
-  LCDDisplayMsg("1-Aquis.de sinal", "2-Alt. freq. amost.", 0);
+  LCDDisplayMsg("Collecting Data", "2-alter SampRate", 0);
   int key = customKeypad.getKey() - 48;
   if(key == - 48) return 1;
   return key;
@@ -159,21 +153,22 @@ void loop() {
   float RLDR = (Vp7 * 10000) /(5 - Vp7); // LDR resistor resistance
 
   float Lumens = -(pow(10, -3) * 5 * RLDR ) + 50; // More reasenable values
-  float RealLumens = -(pow(10, -6) * 1.22 * RLDR ) + 50; // Real 
+  float Lux = (1.25 * pow(10, 7) * pow(RLDR, -1.4059)); // Measure em Lux
+  //float LumensIndirect = Lux * 0.001256;
 
   analogWrite(LED, -(255 * Lumens / 50) + 255);
 
   bool bufferFlag = 0;
 
-  bufferFlag = bufferBuild(Lumens, currentMicros);   //call the buffer builder function every loop cicle, now using raw analog input and microsec precision
+  bufferFlag = bufferBuild(Lux, currentMicros);   //call the buffer builder function every loop cicle, now using raw analog input and microsec precision
 
   if(bufferFlag == 1){
-    // Enviar dados do buffer
+    Serial.println(buffer);
   }
 
   if(currentMode == 2) {
     getBufferInterval();
-    LCDDisplayMsg("Nova frequencia adicionada", "com sucesso", 2000);
+    LCDDisplayMsg("the new Sample ", "rate was added ", 2500);
   }
 
 }
