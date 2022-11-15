@@ -65,7 +65,7 @@ int isGasDetectionOn = true;
 
 
 /*----------Global declaration for Clock Variables----------------*/
-int hours = 23;
+int hours = 13;
 int germanyHours = hours+4;
 int minutes = 59;
 int seconds = 50;
@@ -282,11 +282,14 @@ void buzzerSound(char *feel) {
 void sevSegCountDown() {
 
   for(int i = 10; i > 0; i--) {
-    for(int j = 0; j <= 500; j++) {
+
+    for(int j = 0; j <= 15; j++) {
+      fullStep(true);
       digitalWrite(digPin1, HIGH);
       digitalWrite(digPin2, LOW);
       sevSeg.set(i/10);
       delay(1);
+      fullStep(true);
       digitalWrite(digPin1, LOW);
       digitalWrite(digPin2, HIGH);
       sevSeg.set(i%10);
@@ -388,6 +391,8 @@ void incleaseTime() {
 
 void loop() {
 
+  fullStep(true);
+
   key = customKeypad.getKey();
   if(key == 'A') {
     location = 'A';
@@ -411,10 +416,12 @@ void loop() {
 
 
   if(seconds == 0 && minutes%2 == 0) {
+    stepDelay = 8;
     tone(buzPin, 440, 250);
     LCDDisplayMsg("Troca de Turno", "Vel. motores reduzida");
     sevSegCountDown();
     seconds+=10;
+    stepDelay = 2;
   }
 
 
@@ -432,6 +439,7 @@ void loop() {
       }
 
       gasReading = analogRead(gasSensorPin);
+
     }
   }
 
