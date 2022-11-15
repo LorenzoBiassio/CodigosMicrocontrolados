@@ -3,6 +3,10 @@
 #include <sevenSegmentDisplay.h>
 
 
+/*----------Global declaration for LED------------*/
+int leds[] = {PA_7, PA_6, PA_5, PA_4, PQ_3, PQ_2, PQ_1, PQ_0};
+
+
 /*------------Global declaration for LCD--------------*/
 const int rs = PM_0, rw = PM_1, en = PM_2, d0 = PK_0, d1 = PK_1, d2 = PK_2,
           d3 = PK_3, d4 = PK_4, d5 = PK_5, d6 = PK_6,
@@ -88,6 +92,12 @@ void LCDDisplayMsg(char *firstLine = "", char *secondLine = "",
 
 void setup() {
   Serial.begin(9600);
+
+  // setup for led
+  for(int i = 0; i < 8; i++) {
+    pinMode(leds[i], OUTPUT);
+    digitalWrite(leds[i], LOW);
+  }
 
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
@@ -428,8 +438,16 @@ void loop() {
   int gasReading = analogRead(gasSensorPin); //reads the analaog value from the carbon monoxide sensor's
 
   if(isGasDetectionOn) {
+    bool aux = true;
+    digitalWrite(digPin1, LOW);
+      digitalWrite(digPin2, LOW);
     while(gasReading < 600) {
       digitalWrite(buzPin, HIGH);
+      for(int i = 0; i < 8; i++) {
+        digitalWrite(leds[i], aux);
+        delay(1);
+      }
+      aux = !aux;
       LCDDisplayMsg("Vazamento de Gas", "Evacuar agora!", 100);
 
       currentMillis = millis();
