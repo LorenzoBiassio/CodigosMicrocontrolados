@@ -62,6 +62,7 @@ const int encoderPin = PB_4;
 int horizontal = 0;
 int vertical = 0;
 int rotation = 0;
+bool isRotationClockwise = true;
 bool isHandOpen = true; // true = open; false = closed
 
 
@@ -117,7 +118,7 @@ void openHand(bool handState) {
 }
 
 
-void rotateArmZAxis(int degrees, bool isClockwise = true) {
+void rotateArmZAxis(int degrees, bool isClockwise) {
 
   analogWrite(EN1, 255);
 
@@ -131,7 +132,7 @@ void rotateArmZAxis(int degrees, bool isClockwise = true) {
 
   int currentPosition = (analogRead(encoderPin) * 360) / (4096-275);
 
-  while(abs(currentPosition - degrees) >= 5 ) {
+  while(abs(currentPosition - degrees) >= 8 ) {
 
     currentPosition = (analogRead(encoderPin) * 360) / (4096-275);
     delay(1);
@@ -161,6 +162,13 @@ void translateVertical(int percentage) {
 int getPositionFromString(String userInput, char axis) {
   int startIndex = userInput.indexOf(axis);
 
+
+  if (startIndex == -1) return -1;
+
+  // Rotation direction
+  if(axis == 'R') isRotationClockwise = true;
+  if(axis == 'C') isRotationClockwise = false;
+
   // Hand State Read
   if(axis == 'G') {
     if((int) userInput[startIndex+1] - 48 == 1) {
@@ -175,6 +183,11 @@ int getPositionFromString(String userInput, char axis) {
   char firstDigit = userInput[startIndex+3];
   char secondDigit = userInput[startIndex+2];
   char thirdDigit = userInput[startIndex+1];
+
+  // Serial.println(userInput);
+  // Serial.println(firstDigit);
+  // Serial.println(secondDigit);
+  // Serial.println(thirdDigit);
 
   // Reads the three digits maximum numeric user input
   int position = 0;
@@ -212,6 +225,7 @@ int getCoordinates() {
     auxiliarCharArray[i] = (char) inputChar;
     inputChar = Serial.read();
     i++;
+    delay(10);
   }
 
   String coordinates = auxiliarCharArray;
@@ -220,22 +234,32 @@ int getCoordinates() {
   if(i != 0 ) {
     int horizontalPosition = getPositionFromString(coordinates, 'H'); // horizontal
     int vertictalPosition = getPositionFromString(coordinates, 'V'); // vertical
-    int rotationalPosition = getPositionFromString(coordinates, 'R'); // rotation
+    int rotationalPositionCW = getPositionFromString(coordinates, 'R'); // rotation clockwise
+    int rotationalPositionCC = getPositionFromString(coordinates, 'C'); // rotation counter-clock
     int handOpenClose = getPositionFromString(coordinates, 'G'); // open/close
+
+    coordinates = "";
+    i==0;
+
+    // clar auxiliar array
+    for(int j = 0; j < sizeof(auxiliarCharArray); j++) {
+      auxiliarCharArray[j] = ' ';
+    }
 
     if (horizontalPosition != -1) horizontal = horizontalPosition; 
     if (vertictalPosition != -1) vertical = vertictalPosition; 
-    if (rotationalPosition != -1) rotation = rotationalPosition; 
+    if (rotationalPositionCW != -1) rotation = rotationalPositionCW; 
+    if (rotationalPositionCC != -1) rotation = rotationalPositionCC;
     if (handOpenClose != -1) isHandOpen = handOpenClose; 
 
-    // Serial.print(vertical);
+    // Serial.print(vertictalPosition);
     // Serial.print(", G");
     // Serial.print((bool) isHandOpen);
     // Serial.print(", H");
     // Serial.print(horizontal);
     // Serial.print(", R");
     // Serial.println(rotation);
-    // H045 V100 R026
+    // HO045 V100 RH000
     return 1;
   }
 
@@ -244,7 +268,7 @@ int getCoordinates() {
 
 
 void updateArmStates() {
-  rotateArmZAxis(rotation);
+  rotateArmZAxis(rotation, isRotationClockwise);
   translateHorizontal(horizontal);
   translateVertical(vertical);
   openHand(isHandOpen);
